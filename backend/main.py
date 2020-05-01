@@ -1,4 +1,5 @@
 import time
+import json
 import asyncio
 from pydantic import BaseModel
 from datetime import datetime
@@ -24,13 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-class Item(BaseModel):
-    name: str
-    price: float
-    is_offer: bool = None
-
-
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -43,7 +37,7 @@ def read_item():
 
 
 @app.websocket_route("/now-updated")
-class App(WebSocketEndpoint):
+class SendTime(WebSocketEndpoint):
     task = None
 
     async def on_connect(self, websocket: WebSocket):
@@ -56,14 +50,34 @@ class App(WebSocketEndpoint):
     async def on_disconnect(self, websocket: WebSocket, close_code: int):
         self.task.cancel()
         await websocket.close()
-        print('WebSocket closed')
+        print('WebSocket connection closed')
     
     async def send_time(self, websocket: WebSocket):
         while True:
             await asyncio.sleep(1)
             current_second = get_current_second()
-            print(current_second)
             await websocket.send_text(current_second)
+
+
+@app.websocket_route("/is-odd")
+class IsOdd(WebSocketEndpoint):
+    task = None
+
+    async def on_connect(self, websocket: WebSocket):
+        await websocket.accept()
+    
+    async def on_receive(self, websocket: WebSocket, data):
+        data = json.loads(data)
+        print(data)
+        is_odd = 'yep' if data['number'] % 2 == 1 else 'nope'
+        await websocket.send_json({
+            'number': data['number'],
+            'is_odd': is_odd
+        })
+
+    async def on_disconnect(self, websocket: WebSocket, close_code: int):
+        await websocket.close()
+        print('WebSocket connection closed')
 
 
 def get_current_second():
