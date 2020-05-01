@@ -6,8 +6,7 @@ interface CurrentSecondResponse {
 
 
 async function getCurrentSecond(){
-    console.log(process.env.REACT_APP_SERVER_URL)
-    const currentSecond: CurrentSecondResponse = await fetch(`${process.env.REACT_APP_SERVER_URL}/now`)
+    const currentSecond: CurrentSecondResponse = await fetch(`http://${process.env.REACT_APP_SERVER_URL}/now`)
                                         .then(res => res.json())
                                         .catch(console.error)
     return currentSecond?.time || 'server error'
@@ -17,12 +16,11 @@ async function getCurrentSecond(){
 export default function CurrentSecond(){
     const [currentSecond, setCurrentSecond] = useState<String>('none')
 
-    useEffect(() => {
-        async function updateSecond(){
-            const newSecond: String = await getCurrentSecond()
-            setCurrentSecond(newSecond)
-        }
-        updateSecond()
+    useEffect(()=>{
+        const ws = new WebSocket(`ws://${process.env.REACT_APP_SERVER_URL}/now-updated`);
+        ws.onmessage = function(event) {
+            setCurrentSecond(event.data)
+        };
     }, [])
 
     return (
