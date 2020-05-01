@@ -1,9 +1,14 @@
 import time
+import asyncio
 from pydantic import BaseModel
 from datetime import datetime
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from starlette.websockets import WebSocket
+from starlette.endpoints import WebSocketEndpoint
+
 
 app = FastAPI()
 
@@ -34,20 +39,31 @@ def read_root():
 @app.get("/now")
 def read_item():
     now_formatted = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-
     return {"time": now_formatted}
 
 
-@app.websocket("/now-updated")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    while True:
-        # data = await websocket.receive_text()
-        # time.sleep(1000)
-        current_second = get_current_second()
-        await websocket.send_text(current_second)
+@app.websocket_route("/now-updated")
+class App(WebSocketEndpoint):
+    task = None
 
-    return
+    async def on_connect(self, websocket: WebSocket):
+        await websocket.accept()
+        loop = asyncio.get_running_loop()
+        task = asyncio.create_task(self.send_time(websocket))
+        self.task = task
+        asyncio.ensure_future(task, loop=loop)
+
+    async def on_disconnect(self, websocket: WebSocket, close_code: int):
+        self.task.cancel()
+        await websocket.close()
+        print('WebSocket closed')
+    
+    async def send_time(self, websocket: WebSocket):
+        while True:
+            await asyncio.sleep(1)
+            current_second = get_current_second()
+            print(current_second)
+            await websocket.send_text(current_second)
 
 
 def get_current_second():

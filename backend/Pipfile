@@ -9,6 +9,7 @@ verify_ssl = true
 fastapi = "*"
 uvicorn = "*"
 pydantic = "*"
+nest-asyncio = "*"
 
 [requires]
 python_version = "3.8"
