@@ -25,7 +25,7 @@ export default function CurrentSecond() {
       setNumbers(newNumbers)
     }
 
-  }, [nowWebSocket.readyState, isOddWebSocket.readyState])
+  })
 
   const sendNumber = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
