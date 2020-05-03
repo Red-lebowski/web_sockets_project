@@ -30,7 +30,7 @@ export default function CurrentSecond() {
   const sendNumber = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const number = numberInput
-    isOddWebSocket.send(JSON.stringify({ number }))
+    isOddWebSocket.send(JSON.stringify({ numbe: number }))
   }
 
   const isOddStyle = canSubmitNumber ? 

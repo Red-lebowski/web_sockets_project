@@ -1,15 +1,24 @@
+import uvicorn
 import time
 import json
 import asyncio
-from pydantic import BaseModel
+
+from devtools import debug
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request 
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 
 from starlette.websockets import WebSocket
 from starlette.endpoints import WebSocketEndpoint
 
+from pydantic import BaseModel
+from pydantic import validate_arguments, ValidationError
+
+from custom_type_validators import validate_websocket_request
+from basic_types import IsOddRequest, IsOddResponse
 
 app = FastAPI()
 
@@ -25,11 +34,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
 @app.get("/now")
 def read_item():
     now_formatted = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -38,6 +42,7 @@ def read_item():
 
 @app.websocket_route("/now-updated")
 class SendTime(WebSocketEndpoint):
+    encoding = 'json'
     task = None
 
     async def on_connect(self, websocket: WebSocket):
@@ -61,19 +66,20 @@ class SendTime(WebSocketEndpoint):
 
 @app.websocket_route("/is-odd")
 class IsOdd(WebSocketEndpoint):
+    encoding = 'json'
     task = None
 
     async def on_connect(self, websocket: WebSocket):
         await websocket.accept()
     
-    async def on_receive(self, websocket: WebSocket, data):
-        data = json.loads(data)
-        print(data)
-        is_odd = 'yep' if data['number'] % 2 == 1 else 'nope'
-        await websocket.send_json({
-            'number': data['number'],
+    @validate_websocket_request
+    async def on_receive(self, websocket, data: IsOddRequest):
+        is_odd = 'yep' if data.number % 2 == 1 else 'nope'
+        response_body: IsOddResponse = {
+            'number': data.number,
             'is_odd': is_odd
-        })
+        }
+        await websocket.send_json(response_body)
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int):
         await websocket.close()
@@ -82,3 +88,7 @@ class IsOdd(WebSocketEndpoint):
 
 def get_current_second():
     return datetime.now().strftime("%d/%m/ %Y %H:%M:%S")
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
