@@ -76,21 +76,20 @@ class IsOdd(WebSocketEndpoint):
     
     @validate_websocket_request
     async def on_receive(self, websocket, data: IsOddRequest):
-        is_odd = 'yep' if data.number % 2 == 1 else 'nope'
         errors = None
         response_code = 200
 
         number = data.number
         number_in_words = num2words(number)
-
+        debug(number)
         data = {
-            'nuber': number,
-            'is_odd': 'yep',
+            'number': number,
+            'is_odd': 'yep' if data.number % 2 == 1 else 'nope',
             'response_time': datetime.now().isoformat(),
             'number_metadata': {
                 'number_pronunciation_string': number_in_words,
                 'number_pronunciation_length': len(number_in_words),
-                'numer_pronunciation_parts': number_in_words.split(' ')
+                'number_pronunciation_parts': number_in_words.split(' ')
             }
         }
 

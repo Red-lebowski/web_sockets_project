@@ -1,4 +1,6 @@
 import React, { useState, useEffect, FormEvent } from 'react'
+import { handleIsOddWebSocketResponse } from './webSocketHandlers'
+import { isOddString } from './@types'
 
 const serverURL = process.env.REACT_APP_SERVER_URL
 const nowWebSocket = new WebSocket(`ws://${serverURL}/now-updated`)
@@ -6,7 +8,7 @@ const isOddWebSocket = new WebSocket(`ws://${serverURL}/is-odd`)
 
 export default function CurrentSecond() {
   const [numberInput, setNumberInput] = useState<number>(0)
-  const [numbers, setNumbers] = useState<Array<IsOddObject>>([])
+  const [isOddResults, setIsOddResults] = useState<Array<isOddString >>([])
   const [currentSecond, setCurrentSecond] = useState<String>('connecting...')
   const [canSubmitNumber, setCanSubmitNumber] = useState<Boolean>(false)
 
@@ -18,11 +20,11 @@ export default function CurrentSecond() {
 
     isOddWebSocket.onopen = () => setCanSubmitNumber(true)
 
-    isOddWebSocket.onmessage = function (event) {
-      const result: IsOddObject = JSON.parse(event.data)
-      const newNumbers = numbers
-      newNumbers.push(result)
-      setNumbers(newNumbers)
+    isOddWebSocket.onmessage = function (event: MessageEvent) {
+      const newResult: isOddString = handleIsOddWebSocketResponse(event)
+      const newResults = isOddResults
+      isOddResults.push(newResult)
+      setIsOddResults(isOddResults)
     }
 
   })
@@ -50,28 +52,12 @@ export default function CurrentSecond() {
         </form>
 
         <div className="is-odd-results">
-          {numbers.map(function (item: IsOddObject, id: number) {
-            return (<li key={id}>{item.number}|{item.is_odd}</li>)
-          })}
+          {isOddResults.map( 
+              (resultString: isOddString, id: number) => <li key={id}>{resultString}</li>
+          )}
         </div>
 
       </div>
     </div>
   )
-}
-
-enum SocketState {
-  Connecting = 0,
-  Open = 1,
-  Closing = 2,
-  Closed = 3,
-}
-
-interface CurrentSecondResponse {
-  time: String
-}
-
-interface IsOddObject {
-  number: number
-  is_odd: string
 }

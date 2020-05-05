@@ -13,7 +13,6 @@ class IsOddEnum(str, Enum):
     yes = 'yep'
     no = 'nope'
     
-    
 
 class NewSecondObject(BaseModel):
     formatted_timestamp: str
@@ -26,7 +25,7 @@ class IsOddRequest(BaseModel):
 class NumberMetadata(BaseModel):
     number_pronunciation_string: str
     number_pronunciation_length: int
-    numer_pronunciation_parts: List[str]
+    number_pronunciation_parts: List[str]
 
 
 class IsOddResult(BaseModel):
@@ -47,7 +46,6 @@ class ApiError(BaseModel):
 
 ResponseDataModel = TypeVar('ResponseDataModel')
 class WebSocketResponse(GenericModel, Generic[ResponseDataModel]):
-    model = IsOddResult
 
     response_code: int
     data: Optional[ResponseDataModel]
