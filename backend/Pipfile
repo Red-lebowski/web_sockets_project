@@ -5,15 +5,19 @@ verify_ssl = true
 
 [dev-packages]
 devtools = "*"
+requests = "*"
+logging = "*"
 
 [packages]
 fastapi = "*"
 uvicorn = "*"
 pydantic = "*"
 nest-asyncio = "*"
+num2words = "*"
 
 [requires]
 python_version = "3.8"
 
 [scripts]
 server = "uvicorn main:app --reload"
+test_server = "python3 test_client.py"

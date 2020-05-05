@@ -2,9 +2,11 @@ import uvicorn
 import time
 import json
 import asyncio
+import logging
 
 from devtools import debug
 from datetime import datetime
+from num2words import num2words
 
 from fastapi import FastAPI, Request 
 from fastapi.responses import JSONResponse
@@ -18,7 +20,7 @@ from pydantic import BaseModel
 from pydantic import validate_arguments, ValidationError
 
 from custom_type_validators import validate_websocket_request
-from basic_types import IsOddRequest, IsOddResponse
+from basic_types import IsOddRequest, IsOddResponse, IsOddResult
 
 app = FastAPI()
 
@@ -75,11 +77,31 @@ class IsOdd(WebSocketEndpoint):
     @validate_websocket_request
     async def on_receive(self, websocket, data: IsOddRequest):
         is_odd = 'yep' if data.number % 2 == 1 else 'nope'
-        response_body: IsOddResponse = {
-            'number': data.number,
-            'is_odd': is_odd
+        errors = None
+        response_code = 200
+
+        number = data.number
+        number_in_words = num2words(number)
+
+        data = {
+            'nuber': number,
+            'is_odd': 'yep',
+            'response_time': datetime.now().isoformat(),
+            'number_metadata': {
+                'number_pronunciation_string': number_in_words,
+                'number_pronunciation_length': len(number_in_words),
+                'numer_pronunciation_parts': number_in_words.split(' ')
+            }
         }
-        await websocket.send_json(response_body)
+
+        try:
+            response = IsOddResponse(model=IsOddResult, response_code=response_code, data=data)
+        except ValidationError as e:
+            logging.warning('Response broke: ' + str(e.errors()))
+            response = IsOddResponse(model=IsOddResult, response_code=500, errors=e.errors())
+        
+        await websocket.send_text(response.json())
+
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int):
         await websocket.close()

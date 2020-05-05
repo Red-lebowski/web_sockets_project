@@ -30,7 +30,7 @@ export default function CurrentSecond() {
   const sendNumber = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const number = numberInput
-    isOddWebSocket.send(JSON.stringify({ numbe: number }))
+    isOddWebSocket.send(JSON.stringify({ number }))
   }
 
   const isOddStyle = canSubmitNumber ? 
@@ -45,7 +45,7 @@ export default function CurrentSecond() {
 
       <div className="is-odd-calc" style={isOddStyle}>
         <form className="is-odd-form" onSubmit={sendNumber}>
-          <input type='number' onChange={e => setNumberInput(Number(e.target.value))} />
+          <input type='number' defaultValue={3} onChange={e => setNumberInput(Number(e.target.value))} />
           <input type='submit' value='is odd'/>
         </form>
 

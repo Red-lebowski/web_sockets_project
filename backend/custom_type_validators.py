@@ -5,18 +5,20 @@ from inspect import signature
 from typing import Callable, Any
 
 from pydantic import ValidationError
-from pydantic.decorator import ValidatedFunction
+from pydantic.decorator import ValidatedFunction 
 
 from starlette.status import WS_1003_UNSUPPORTED_DATA
 
 from fastapi.exception_handlers import jsonable_encoder
 
+from basic_types import WebSocketResponse
+
 
 def validate_websocket_request(func: Callable) -> Callable:
-    def decorator(*args: Any, **kwargs: Any) -> None:
+    def decorator(*args: Any, **kwargs: Any) -> Callable:
 
         @functools.wraps(func)
-        async def wrapped(*args: Any, **kwargs: Any):
+        async def wrapped( *args: Any, **kwargs: Any):
 
             parameters = signature(func).parameters
 
@@ -33,13 +35,9 @@ def validate_websocket_request(func: Callable) -> Callable:
             except ValidationError as exc:
                 logging.info('WebSocket - Invalid data received [rejected]')
                 close_code = WS_1003_UNSUPPORTED_DATA
-                await websocket.send_json(
-                    {
-                        'ok': False,
-                        'status_code': close_code,
-                        'detail': jsonable_encoder(exc.errors())
-                    }
-                )
+                response = WebSocketResponse(response_code=close_code, errors=exc.errors())
+                await websocket.send_text(response.json())
+                
             return func
         return wrapped(*args, **kwargs)
     return decorator
