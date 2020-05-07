@@ -8,10 +8,6 @@ function formatIsOdd(e: IsOddData): isOddString{
     return `${e.number} | ${e.is_odd}`
 }
 
-function handleMalformedResponse(e: Errors){
-    
-}
-
 export function handleIsOddWebSocketResponse(event:MessageEvent ): isOddString{
     /**
      * is the only difference between fold and any other function

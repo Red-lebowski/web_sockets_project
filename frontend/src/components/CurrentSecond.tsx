@@ -4,19 +4,21 @@ import { isOddString } from '../@types'
 import { useMachine } from '@xstate/react';
 
 import { handleIsOddWebSocketResponse } from '../webSocketHandlers'
-import { webSocketMachine } from '../machines/currentSecond'
+import { getWebSocketMachine } from '../machines/currentSecond'
 import Loader from './Loader/Loader'
 
 const serverURL = process.env.REACT_APP_SERVER_URL
 const nowWebSocket = new WebSocket(`ws://${serverURL}/now-updated`)
-const isOddWebSocket = new WebSocket(`ws://${serverURL}/is-odd`)
+// const isOddWebSocket = new WebSocket(`ws://${serverURL}/is-odd`)
+
+const isOddWebSocketMachine = getWebSocketMachine(`ws://${serverURL}/is-odd`, handleIsOddWebSocketResponse);
 
 export default function CurrentSecond() {
   const [numberInput, setNumberInput] = useState<number>(0)
   const [isOddResults, setIsOddResults] = useState<Array<isOddString >>([])
   const [currentSecond, setCurrentSecond] = useState<String>('connecting...')
   const [webSocketStatus, setWebSocketStatus] = useState<string>('disconnected')
-  const [webSocketState, updateWebSocket] = useMachine(webSocketMachine)
+  const [webSocketState, updateWebSocket] = useMachine(isOddWebSocketMachine)
 
   useEffect(() => {
 
@@ -24,26 +26,21 @@ export default function CurrentSecond() {
       setCurrentSecond(event.data)
     }
 
-    isOddWebSocket.onmessage = function (event: MessageEvent) {
-      const newResult: isOddString = handleIsOddWebSocketResponse(event)
-      const newResults = isOddResults
-      newResults.push(newResult)
-      setIsOddResults(isOddResults)
-    }
-
   })
 
   const sendNumber = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const number = numberInput
-    isOddWebSocket.send(JSON.stringify({ number }))
+    updateWebSocket({type: 'SEND_DATA', data: {number}})
+    // isOddWebSocket.send(JSON.stringify({ number }))
   }
   
-  const isConnected = webSocketStatus == 'connected'
+  const isConnected = webSocketState.value == 'connected'
   const canSubmitNumberStyle: string = webSocketState.value == 'connected' ? 
                       ''
                       : 'opacity-10 pointer-events-none'
   const inactiveButtonStyle = "opacity-50 cursor-not-allowed"
+  const {showSpinner} = webSocketState.context
 
   return (
     <div className="flex justify-center bg-gray-200 w-full h-screen">
@@ -56,14 +53,14 @@ export default function CurrentSecond() {
         </div>
 
         <div className="flex flex-no-wrap items-stretch w-1/1 text-center">
-          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${!isConnected ? '' : inactiveButtonStyle}`} 
+          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${!isConnected && !showSpinner ? '' : inactiveButtonStyle}`} 
               onClick={e => updateWebSocket('CONNECT')}
               >connect</div>
-          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${isConnected ? '' : inactiveButtonStyle}`}
+          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${isConnected && !showSpinner ? '' : inactiveButtonStyle}`}
               onClick={e => updateWebSocket('DISCONNECT')}
           >disconnect</div>
           <span className='w-1/5 flex justify-around items-center'>
-            {webSocketState.context.showSpinner ? <Loader/> : ''}
+            {showSpinner ? <Loader/> : ''}
           </span>
         </div>
 
@@ -75,7 +72,7 @@ export default function CurrentSecond() {
         </form>
 
         <div className="is-odd-results">
-          {isOddResults.map( 
+          {webSocketState.context.messagesReceived.map( 
             (resultString: isOddString, id: number) => <li key={id}>{resultString}</li>
             )}
         </div>
