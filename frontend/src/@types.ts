@@ -1,4 +1,5 @@
 import * as t from 'io-ts'
+import {DateFromISOString} from 'io-ts-types/lib/DateFromISOString'
 
 export const IsOddData = t.type({
   number: t.number,
@@ -8,7 +9,7 @@ export const IsOddData = t.type({
     'nope': null, 
   }),
   // TODO: i want to figure out how to actually determine if this is a ISO8601 string (refinement of some sort)
-  response_time: t.string,
+  response_time: DateFromISOString,
   number_metadata: t.type({
     number_pronunciation_string: t.string,
     // this could possibly be a dynamic type using the value above. probably overkill
@@ -19,7 +20,7 @@ export const IsOddData = t.type({
 
 export type IsOddData = t.TypeOf<typeof IsOddData>
 
-// possible room for refinement(brand) that checks if the | character is in the string
+// possible room for refinement(brand) that checks if the "|" (pipe) character is in the string
 export type isOddString = string
 
 export const APIResponse = t.type({
@@ -28,3 +29,5 @@ export const APIResponse = t.type({
   data: t.union([t.any, t.undefined]),
   errors: t.union([t.any, t.undefined]),
 })
+
+export type APIResponse = t.TypeOf<typeof APIResponse>

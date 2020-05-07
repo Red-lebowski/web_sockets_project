@@ -1,12 +1,18 @@
 import {IsOddData, isOddString, APIResponse} from './@types'
 import { flow } from 'fp-ts/lib/function';
 import { fold } from 'fp-ts/lib/Either'
+import { Errors } from 'io-ts';
+import {Lens} from 'monocle-ts'
 
 function formatIsOdd(e: IsOddData): isOddString{
     return `${e.number} | ${e.is_odd}`
 }
 
-export function handleIsOddWebSocketResponse(event: MessageEvent): isOddString{
+function handleMalformedResponse(e: Errors){
+    
+}
+
+export function handleIsOddWebSocketResponse(event:MessageEvent ): isOddString{
     /**
      * is the only difference between fold and any other function
      * (in that every other function takes input, validates it and does something),
@@ -18,6 +24,7 @@ export function handleIsOddWebSocketResponse(event: MessageEvent): isOddString{
      * that fold extracts the "inner value" of the either type for both cases
      */
     // this is a bit contrived but still sick
+
     return flow(
         JSON.parse,
         APIResponse.decode,
@@ -34,3 +41,4 @@ export function handleIsOddWebSocketResponse(event: MessageEvent): isOddString{
         )
     )(event.data)
 }
+
