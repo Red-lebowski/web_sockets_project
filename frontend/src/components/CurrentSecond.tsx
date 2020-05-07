@@ -2,8 +2,10 @@ import React, { useState, useEffect, FormEvent } from 'react'
 
 import { isOddString } from '../@types'
 import { useMachine } from '@xstate/react';
+
 import { handleIsOddWebSocketResponse } from '../webSocketHandlers'
 import { webSocketMachine } from '../machines/currentSecond'
+import Loader from './Loader/Loader'
 
 const serverURL = process.env.REACT_APP_SERVER_URL
 const nowWebSocket = new WebSocket(`ws://${serverURL}/now-updated`)
@@ -48,17 +50,21 @@ export default function CurrentSecond() {
 
       <div className="flex flex-col w-1/3">
 
-        <div className="w-auto underline text-center">
-          {currentSecond} | {webSocketState.value}
+        <div className="flex flex-row w-auto text-center">
+          <span className="flex-1 underline"> {currentSecond}</span>
+          <span className="flex-1">{webSocketState.value}</span>
         </div>
 
-        <div className="flex items-stretch w-1/1 text-center">
-          <div className={`flex-1 bg-blue-500 text-white font-bold py-2 px-4 rounded ${!isConnected ? '' : inactiveButtonStyle}`} 
+        <div className="flex flex-no-wrap items-stretch w-1/1 text-center">
+          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${!isConnected ? '' : inactiveButtonStyle}`} 
               onClick={e => updateWebSocket('CONNECT')}
               >connect</div>
-          <div className={`flex-1 bg-blue-500 text-white font-bold py-2 px-4 rounded ${isConnected ? '' : inactiveButtonStyle}`}
+          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${isConnected ? '' : inactiveButtonStyle}`}
               onClick={e => updateWebSocket('DISCONNECT')}
           >disconnect</div>
+          <span className='w-1/5 flex justify-around items-center'>
+            {webSocketState.context.showSpinner ? <Loader/> : ''}
+          </span>
         </div>
 
         <form className={`flex w-1/1 items-center border-b border-b-2 border-teal-500 py-2 ${canSubmitNumberStyle}`} onSubmit={sendNumber}>
