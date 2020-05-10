@@ -4,20 +4,17 @@ import { isOddString } from '../@types'
 import { useMachine } from '@xstate/react';
 
 import { handleIsOddWebSocketResponse } from '../webSocketHandlers'
-import { getWebSocketMachine } from '../machines/currentSecond'
+import { getWebSocketMachine, States, Events } from '../machines/webSocket'
 import Loader from './Loader/Loader'
 
 const serverURL = process.env.REACT_APP_SERVER_URL
 const nowWebSocket = new WebSocket(`ws://${serverURL}/now-updated`)
-// const isOddWebSocket = new WebSocket(`ws://${serverURL}/is-odd`)
 
 const isOddWebSocketMachine = getWebSocketMachine(`ws://${serverURL}/is-odd`, handleIsOddWebSocketResponse);
 
 export default function CurrentSecond() {
   const [numberInput, setNumberInput] = useState<number>(0)
-  const [isOddResults, setIsOddResults] = useState<Array<isOddString >>([])
   const [currentSecond, setCurrentSecond] = useState<String>('connecting...')
-  const [webSocketStatus, setWebSocketStatus] = useState<string>('disconnected')
   const [webSocketState, updateWebSocket] = useMachine(isOddWebSocketMachine)
 
   useEffect(() => {
@@ -31,12 +28,12 @@ export default function CurrentSecond() {
   const sendNumber = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const number = numberInput
-    updateWebSocket({type: 'SEND_DATA', data: {number}})
+    updateWebSocket({type: Events.SEND_DATA, data: {number}})
     // isOddWebSocket.send(JSON.stringify({ number }))
   }
   
-  const isConnected = webSocketState.value == 'connected'
-  const canSubmitNumberStyle: string = webSocketState.value == 'connected' ? 
+  const isConnected = webSocketState.value == States.CONNECTED
+  const canSubmitNumberStyle: string = isConnected ? 
                       ''
                       : 'opacity-10 pointer-events-none'
   const inactiveButtonStyle = "opacity-50 cursor-not-allowed"
