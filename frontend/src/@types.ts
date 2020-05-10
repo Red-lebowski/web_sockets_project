@@ -23,11 +23,9 @@ export type IsOddData = t.TypeOf<typeof IsOddData>
 // possible room for refinement(brand) that checks if the "|" (pipe) character is in the string
 export type isOddString = string
 
-export const APIResponse = t.type({
+export const APIResponse = <C extends t.Mixed>(codec: C) => t.type({
   response_code: t.number,
   // t.any can be refined to match the python types in both instances
-  data: t.union([t.any, t.undefined]),
+  data: t.union([t.any, codec]),
   errors: t.union([t.any, t.undefined]),
 })
-
-export type APIResponse = t.TypeOf<typeof APIResponse>
