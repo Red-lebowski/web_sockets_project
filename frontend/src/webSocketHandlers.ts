@@ -1,17 +1,12 @@
-import {IsOddData, isOddString, APIResponse} from './@types'
+import {APIResponse} from './@types'
 import { flow } from 'fp-ts/lib/function';
-import { fold, Either, left, right } from 'fp-ts/lib/Either'
+import { Either } from 'fp-ts/lib/Either'
 import * as t from 'io-ts';
 
-// i want to replace this any with a generic that will flow throught the app (the websocket machine)
-export function handleIsOddWebSocketResponse(event:MessageEvent ): Either<t.Errors, any>{
+// TODO: refine the any to be the apiresponse generic
+export function validateResponse<c extends t.Mixed>(event: MessageEvent, dataType: c): Either<t.Errors, any>{
     return flow(
         JSON.parse,
-        APIResponse(IsOddData).decode,
-        fold(
-            e => left(e),
-            a => right(`${a.data.number} | ${a.data.is_odd}`),
-        )
+        APIResponse(dataType).decode
     )(event.data)
 }
-

@@ -8,7 +8,6 @@ export const IsOddData = t.type({
     'yep': null,
     'nope': null, 
   }),
-  // TODO: i want to figure out how to actually determine if this is a ISO8601 string (refinement of some sort)
   response_time: DateFromISOString,
   number_metadata: t.type({
     number_pronunciation_string: t.string,
@@ -20,12 +19,24 @@ export const IsOddData = t.type({
 
 export type IsOddData = t.TypeOf<typeof IsOddData>
 
-// possible room for refinement(brand) that checks if the "|" (pipe) character is in the string
-export type isOddString = string
+
+export const NewTimestampData = t.type({
+  // should be a datetime or something
+  formatted_timestamp: t.string
+})
+
+export type NewTimestampData = t.TypeOf<typeof NewTimestampData>
+
 
 export const APIResponse = <C extends t.Mixed>(codec: C) => t.type({
   response_code: t.number,
   // t.any can be refined to match the python types in both instances
-  data: t.union([t.any, codec]),
+  data: t.union([t.undefined, codec]),
   errors: t.union([t.any, t.undefined]),
 })
+
+export const ApiResponses = t.union([
+  APIResponse(IsOddData), 
+  APIResponse(NewTimestampData),
+])
+export type ApiResponses = t.TypeOf<typeof ApiResponses>

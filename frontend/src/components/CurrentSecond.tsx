@@ -29,7 +29,6 @@ export default function CurrentSecond() {
     event.preventDefault()
     const number = numberInput
     updateWebSocket({type: Events.SEND_DATA, data: {number}})
-    // isOddWebSocket.send(JSON.stringify({ number }))
   }
   
   const isConnected = webSocketState.value == States.CONNECTED
@@ -45,7 +44,7 @@ export default function CurrentSecond() {
       <div className="flex flex-col w-1/3">
 
         <div className="flex flex-row w-auto text-center">
-          <span className="flex-1 underline"> {currentSecond}</span>
+          <span className="flex-1 underline"> {currentSecond} </span>
           <span className="flex-1">{webSocketState.value}</span>
         </div>
 

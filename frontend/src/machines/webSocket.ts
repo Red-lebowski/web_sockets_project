@@ -1,7 +1,8 @@
-import { Machine, MachineConfig, MachineOptions, assign, Sender, DoneInvokeEvent, InvokeCreator, send, SendAction } from 'xstate'
+import { Machine, MachineConfig, MachineOptions, assign, Sender, DoneInvokeEvent, InvokeCreator, send, sendParent, StateNode } from 'xstate'
 import * as t from 'io-ts'
-import { Either, fold } from 'fp-ts/lib/Either'
-import { raise } from 'xstate/lib/actions'
+import { Either, fold, isLeft, isRight, right } from 'fp-ts/lib/Either'
+import { validateResponse } from '../webSocketHandlers'
+import {ApiResponses} from '../@types'
 
 
 // states
@@ -10,6 +11,9 @@ export enum States {
 	CONNECTED = 'CONNECTED',
 	DISCONNECTED = 'DISCONNECTED',
 	CONNECTION_SUCCESS = 'CONNECTION_SUCCESS',
+	NEW_MESSAGE_RECEIVED = 'NEW_MESSAGE_RECEIVED',
+	INVALID_MESSAGE = 'INVALID_MESSAGE',
+	VALID_MESSAGE = 'VALID_MESSAGE',
 }
 
 // i might wanna add the events to this?
@@ -20,6 +24,7 @@ export type AutomataSchema = {
 }
 
 
+
 // Events
 export enum Events {
 	CONNECT = 'CONNECT',
@@ -28,7 +33,7 @@ export enum Events {
 	SEND_DATA = 'SEND_DATA',
 	NEW_MESSAGE = 'NEW_MESSAGE',
 	NEW_MESSAGE_ERROR = 'NEW_MESSAGE_ERROR',
-	NEW_MESSAGE_PARSED = 'NEW_MESSAGE_PARSED',
+	NEW_MESSAGE_VALID = 'NEW_MESSAGE_VALID',
 }
 
 export type Connect = {
@@ -55,9 +60,9 @@ export type NEW_MESSAGE_ERROR = {
 	type: Events.NEW_MESSAGE_ERROR,
 	errors: t.Errors
 }
-export type NEW_MESSAGE_PARSED = {
-	type: Events.NEW_MESSAGE_PARSED,
-	msg: string
+export type NEW_MESSAGE_VALID = {
+	type: Events.NEW_MESSAGE_VALID,
+	msg: any
 }
 
 export type AutomataEvent =
@@ -72,18 +77,19 @@ export type AutomataEvent =
 // Context
 export type AutomataContext = {
 	showSpinner: boolean,
-	messagesReceived: Array<any>,
-	dataReceivedHandler: (e: MessageEvent) => any,
 	webSocketUrl: string,
 	webSocket?: WebSocket,
+	dataType: t.Mixed,
+	// any should be the type of the api response
+	msgE: Either<t.Errors, any>,
 }
 
 // this is just to stop typescript whinging when provided to withContext
 export const initialContext: AutomataContext = {
 	webSocketUrl: '',
 	showSpinner: false,
-	messagesReceived: [],
-	dataReceivedHandler: e => '',
+	dataType: t.any,
+	msgE: right(null),
 }
 
 
@@ -103,27 +109,13 @@ export const sendData = (context: AutomataContext, event: SendData) =>
 export const addWebSocket = assign<AutomataContext, NewConnectedWebSocket>({
 	webSocket: (c, event: NewConnectedWebSocket) => event.data.webSocket
 })
+export const msgIsLeft = (c: AutomataContext, e: AutomataEvent) => isLeft(c.msgE)
+export const msgIsRight = (c: AutomataContext, e: AutomataEvent) => isRight(c.msgE)
 
 export const handleWebSocketConnectionError = (context: AutomataContext, event: AutomataEvent) => {
 	console.error(event)
 	alert('Error connecting to websocket')
 }
-
-export const addDataToContext = (e: MessageEvent) => assign<AutomataContext>({
-	messagesReceived: (context, event) => {
-		const {messagesReceived} = context
-		messagesReceived.push(event)
-		return messagesReceived
-	}
-})
-
-export const updateMessages = assign<AutomataContext, NEW_MESSAGE_PARSED>({
-	messagesReceived: (c: AutomataContext, e: NEW_MESSAGE_PARSED) => {
-		const {messagesReceived} = c
-		messagesReceived.push(e.msg)
-		return messagesReceived
-	}
-})
 
 export const connectWebsocket: InvokeCreator<AutomataContext, AutomataEvent, any> =
 	(context: AutomataContext, e) =>
@@ -135,28 +127,15 @@ export const connectWebsocket: InvokeCreator<AutomataContext, AutomataEvent, any
 				// this is another part that needs tobe flattened i think. rather than 
 				webSocket.onopen = e => resolve({ webSocket })
 				webSocket.onmessage = function (this: WebSocket, ev: MessageEvent) {
-					callback({ type: Events.NEW_MESSAGE, event: ev })
+					const event = ev
+					callback({ type: Events.NEW_MESSAGE, event })
 				}
-
 			})
 
+export const validateNewMessage =
+	(c: AutomataContext, e: NewMessage) => 
+		Object.assign(c, {msgE: validateResponse(e.event, c.dataType)})
 
-export const __handleNewMessage = assign<AutomataContext, NewMessage>({
-	messagesReceived: (context: AutomataContext, event: NewMessage) => {
-		const { messagesReceived } = context
-		const newMessage = context.dataReceivedHandler(event.event)
-		messagesReceived.push(newMessage)
-		return messagesReceived
-	}
-})
-
-export const handleNewMessage = send((context: AutomataContext, event: NewMessage) => {
-	const e = fold<t.Errors, any, any>(
-		errors => ({type: Events.NEW_MESSAGE_ERROR, errors}),
-		msg => ({type: Events.NEW_MESSAGE_PARSED, msg}),
-	)(context.dataReceivedHandler(event.event))
-	return e
-})
 
 // Config
 export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEvent> = {
@@ -192,22 +171,39 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 			}
 		},
 		[States.CONNECTED]: {
-			entry: 'hideSpinner',
 			on: {
 				[Events.DISCONNECT]: {
 					target: States.DISCONNECTED
 				},
 				[Events.SEND_DATA]: {
+					// TODO: flatten this to account for errors when sending data
 					actions: 'sendData'
 				},
 				[Events.NEW_MESSAGE]: {
-					actions: 'handleNewMessage'
+					target: States.NEW_MESSAGE_RECEIVED
 				},
-				[Events.NEW_MESSAGE_PARSED]:{
-					actions: 'updateMessages'
-				},
-				[Events.NEW_MESSAGE_ERROR]:{
-					actions: (c, e) => console.log(e)
+			}
+		},
+		[States.NEW_MESSAGE_RECEIVED]: {
+			entry: 'validateNewMessage',
+			on: {
+				'': [
+					{target: States.INVALID_MESSAGE, cond: 'msgIsLeft'},
+					{target: States.VALID_MESSAGE, cond: 'msgIsRight'},
+				]
+			}
+		},
+		[States.VALID_MESSAGE]: {
+			entry: sendParent<AutomataContext, AutomataEvent>({
+				type: 'NEW_MESSAGE',
+				// this should extract the actual message data from the message validation
+				data: (c: AutomataContext) => fold(e => null, (m: ApiResponses) => m.data)(c.msgE)
+			})
+		},
+		[States.INVALID_MESSAGE]: {
+			after:{
+				1000: {
+					target: States.CONNECTED
 				}
 			}
 		},
@@ -231,16 +227,17 @@ export const options: Partial<MachineOptions<AutomataContext, any>> = {
 		addWebSocket,
 		handleWebSocketConnectionError,
 		connectWebsocket,
-		handleNewMessage,
-		updateMessages
+		validateNewMessage
 	},
+	guards:{
+		msgIsLeft,
+		msgIsRight,
+	}
 }
 
-export function getWebSocketMachine(url: string, dataReceivedHandler: AutomataContext["dataReceivedHandler"] = addDataToContext) {
-	return Machine(config, options)
-		.withContext({
+export const getWebSocketMachine = (url: string, dataType: t.Mixed) => 
+	Machine(config, options).withContext({
 			...initialContext,
-			dataReceivedHandler,
+			dataType,
 			webSocketUrl: url,
 		})
-}
