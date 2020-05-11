@@ -11,11 +11,13 @@ const serverURL = process.env.REACT_APP_SERVER_URL
 const nowWebSocket = new WebSocket(`ws://${serverURL}/now-updated`)
 
 const isOddWebSocketMachine = getWebSocketMachine(`ws://${serverURL}/is-odd`, handleIsOddWebSocketResponse);
+const currentSecondMachine = getWebSocketMachine(`ws://${serverURL}/now-updated`)
 
 export default function CurrentSecond() {
   const [numberInput, setNumberInput] = useState<number>(0)
   const [currentSecond, setCurrentSecond] = useState<String>('connecting...')
   const [webSocketState, updateWebSocket] = useMachine(isOddWebSocketMachine)
+  const 
 
   useEffect(() => {
 

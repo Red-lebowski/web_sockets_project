@@ -10,12 +10,16 @@ const config: MachineConfig<any, any, any> = {
     context: {
         is_odd_child: null,
         current_second_child: null,
+        current_second: 'connecting',
+        is_odd_results: [],
+
+
     },
     states: {
         init: {
             entry: assign({
-                is_odd_child: () => getWebSocketMachine(`ws://${serverURL}/now-updated`, handleIsOddWebSocketResponse),
-                current_second_child: () => getWebSocketMachine(`ws://${serverURL}/now-updated`)     
+                is_odd_child: () => spawn(getWebSocketMachine(`ws://${serverURL}/now-updated`, handleIsOddWebSocketResponse)),
+                current_second_child: () => spawn(getWebSocketMachine(`ws://${serverURL}/now-updated`))     
             })        
         }
     }

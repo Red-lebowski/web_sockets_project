@@ -140,16 +140,6 @@ export const connectWebsocket: InvokeCreator<AutomataContext, AutomataEvent, any
 
 			})
 
-
-export const __handleNewMessage = assign<AutomataContext, NewMessage>({
-	messagesReceived: (context: AutomataContext, event: NewMessage) => {
-		const { messagesReceived } = context
-		const newMessage = context.dataReceivedHandler(event.event)
-		messagesReceived.push(newMessage)
-		return messagesReceived
-	}
-})
-
 export const handleNewMessage = send((context: AutomataContext, event: NewMessage) => {
 	const e = fold<t.Errors, any, any>(
 		errors => ({type: Events.NEW_MESSAGE_ERROR, errors}),

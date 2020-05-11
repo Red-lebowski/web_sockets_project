@@ -2,6 +2,8 @@ import {IsOddData, isOddString, APIResponse} from './@types'
 import { flow } from 'fp-ts/lib/function';
 import { fold, Either, left, right } from 'fp-ts/lib/Either'
 import * as t from 'io-ts';
+import { assign } from 'xstate';
+import { AutomataContext, NewMessage } from './machines/webSocket';
 
 // i want to replace this any with a generic that will flow throught the app (the websocket machine)
 export function handleIsOddWebSocketResponse(event:MessageEvent ): Either<t.Errors, any>{
@@ -15,3 +17,7 @@ export function handleIsOddWebSocketResponse(event:MessageEvent ): Either<t.Erro
     )(event.data)
 }
 
+
+export const handleNewSecond = assign<AutomataContext, NewMessage >({
+    messagesReceived: (c,e) => [e.event.data]
+})
