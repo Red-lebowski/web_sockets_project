@@ -21,8 +21,8 @@ export default function CurrentSecond() {
                       ''
                       : 'opacity-10 pointer-events-none'
   const inactiveButtonStyle = "opacity-50 cursor-not-allowed"
-  const {showSpinner} = socketState.context
-
+  const showSpinner = Object.values(socketState.value).includes('CONNECTING')
+  
   return (
     <div className="flex justify-center bg-gray-200 w-full h-screen">
 
@@ -30,7 +30,7 @@ export default function CurrentSecond() {
 
         <div className="flex flex-row w-auto text-center">
           <span className="flex-1 underline"> {socketState.context.currentSecond} </span>
-          <span className="flex-1">{socketState.context.currentSecondIsConnected.toString()}</span>
+          <span className="flex-1">state</span>
         </div>
 
         <div className="flex flex-no-wrap items-stretch w-1/1 text-center">

@@ -57,7 +57,7 @@ class SendTime(WebSocketEndpoint):
     async def on_disconnect(self, websocket: WebSocket, close_code: int):
         self.task.cancel()
         await websocket.close()
-        print('WebSocket connection closed')
+        print('Now Updated WebSocket connection closed')
     
     async def send_time(self, websocket: WebSocket):
         while True:
@@ -104,7 +104,7 @@ class IsOdd(WebSocketEndpoint):
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int):
         await websocket.close()
-        print('WebSocket connection closed')
+        print('Is Odd WebSocket connection closed')
 
 
 def get_current_second():

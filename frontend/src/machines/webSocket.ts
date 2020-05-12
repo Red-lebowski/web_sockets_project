@@ -1,9 +1,15 @@
-import { Machine, MachineConfig, MachineOptions, assign, Sender, DoneInvokeEvent, InvokeCreator, send, sendParent, StateNode } from 'xstate'
+import { Machine, MachineConfig, MachineOptions, assign, Sender, DoneInvokeEvent, InvokeCreator, sendParent } from 'xstate'
+
 import * as t from 'io-ts'
-import { Either, fold, isLeft, isRight, right } from 'fp-ts/lib/Either'
+import { Either, fold, isLeft, isRight, left } from 'fp-ts/lib/Either'
 import { validateResponse } from '../handlers/webSocketHandlers'
 import {ApiResponses} from '../@types'
 
+// middleware
+// this is a potential solve for specifiying the child.
+// const sendParent = (...params:any) => ({
+// 	sockerUrl: (c: any) => c.webSocketUrl
+// })
 
 // states
 export enum States {
@@ -25,6 +31,8 @@ export type AutomataSchema = {
 
 
 // Events
+// TODO: make parent machine reference this
+// TODO: prepend all events with WS
 export enum Events {
 	CONNECT = 'CONNECT',
 	CONNECTED = 'CONNECTED',
@@ -90,7 +98,7 @@ export const initialContext: AutomataContext = {
 	webSocketUrl: '',
 	showSpinner: false,
 	dataType: t.any,
-	msgE: right(null),
+	msgE: left([]),
 }
 
 
@@ -110,10 +118,7 @@ export const sendData = (context: AutomataContext, event: SendData) =>
 export const addWebSocket = assign<AutomataContext, NewConnectedWebSocket>({
 	webSocket: (c, event: NewConnectedWebSocket) => event.data.webSocket
 })
-export const msgIsLeft = (c: AutomataContext, e: AutomataEvent) => {
-	console.log({m: c.msgE, l: isLeft(c.msgE), r: isRight(c.msgE)})
-	return isLeft(c.msgE)
-}
+export const msgIsLeft = (c: AutomataContext, e: AutomataEvent) => isLeft(c.msgE)
 export const msgIsRight = (c: AutomataContext, e: AutomataEvent) => isRight(c.msgE)
 
 export const handleWebSocketConnectionError = (context: AutomataContext, event: AutomataEvent) => {
@@ -124,14 +129,11 @@ export const handleWebSocketConnectionError = (context: AutomataContext, event: 
 export const sendNewMessageToParent =  
 	sendParent<AutomataContext, AutomataEvent>((c: AutomataContext)=>({
 		type: 'NEW_MESSAGE',
+		socketUrl: c.webSocketUrl,
 		// this should extract the actual message data from the message validation
 		data: fold(
 				e => null, 
-				(m: ApiResponses) => {
-					console.log({m,c})
-
-					return m.data
-				}
+				(m: ApiResponses) => m.data
 			)(c.msgE)
 	}))
 
@@ -146,14 +148,13 @@ export const connectWebsocket: InvokeCreator<AutomataContext, AutomataEvent, any
 				webSocket.onopen = e => resolve({ webSocket })
 				webSocket.onmessage = function (this: WebSocket, ev: MessageEvent) {
 					const event = ev
-					console.log({ev})
 					callback({ type: Events.NEW_MESSAGE, event })
 				}
 			})
 
 export const validateNewMessage =
 		assign<AutomataContext, NewMessage>({
-			msgE:(c: AutomataContext, e: NewMessage) =>  validateResponse(e.event, c.dataType)
+			msgE:(c: AutomataContext, e: NewMessage) => validateResponse(e.event, c.dataType)
 		})
 	
 
@@ -196,7 +197,10 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 				assign<AutomataContext>({isConnected: true}),
 				// TODO: change string to Event references and have the parent 
 				// reference that too.
-				sendParent('CONNECTED'),
+				sendParent((c: AutomataContext) => ({
+					type: 'CONNECTED',
+					socketUrl: c.webSocketUrl
+				})),
 			],
 			on: {
 				[Events.DISCONNECT]: {
@@ -237,7 +241,12 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 		[States.DISCONNECTED]: {
 			entry: [
 				assign<AutomataContext>({isConnected: false}),
-				sendParent('DISCONNECTED')
+				// i might be able to build my own middleware or something to automatically add the identifier
+				sendParent((c: AutomataContext) => ({
+					type:'DISCONNECTED',
+					socketUrl: c.webSocketUrl
+				})),
+				(c,e) => c.webSocket?.close()
 			],
 			on: {
 				[Events.CONNECT]: {

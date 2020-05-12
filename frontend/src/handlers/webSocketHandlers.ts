@@ -9,7 +9,6 @@ export function validateResponse<c extends t.Mixed>(event: MessageEvent, dataTyp
         data: event.data
     }
     const r =  APIResponse(dataType).decode(hack)
-    console.log({data: event.data, r})
 
     return r
 }
