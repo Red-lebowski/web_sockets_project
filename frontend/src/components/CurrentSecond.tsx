@@ -7,13 +7,12 @@ import Loader from './Loader/Loader'
 import { IsOddData } from '../@types';
 
 export default function CurrentSecond() {
-  const [numberInput, setNumberInput] = useState<number>(0)
   const [socketState, updateSocket] = useMachine(machine, {devTools: true})
 
   const sendNumber = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    // TODO: replace the state value to the value in event.target
-    const number = numberInput
+    // @ts-ignore
+    const number = document.getElementById('number-input').value
     updateSocket({type: Events.IS_ODD_FORM_SUBMIT, data: {number}})
   }
   
@@ -45,8 +44,8 @@ export default function CurrentSecond() {
         </div>
 
         <form className={`flex w-1/1 items-center border-b border-b-2 border-teal-500 py-2 ${!isConnected && inactiveStyle}`} onSubmit={sendNumber}>
-          <input className='appearance-none bg-transparent border-none w-full text-gray-700 mr-3 py-1 px-2 leading-tight focus:outline-none' 
-                type='number' onChange={e => setNumberInput(Number(e.target.value))} />
+          <input id='number-input' className='appearance-none bg-transparent border-none w-full text-gray-700 mr-3 py-1 px-2 leading-tight focus:outline-none' 
+                type='number'/>
           <input className='flex-shrink-0 bg-teal-500 hover:bg-teal-700 border-teal-500 hover:border-teal-700 text-sm border-4 text-white py-1 px-2 rounded' 
                 type='submit' value='is odd'/>
         </form>
