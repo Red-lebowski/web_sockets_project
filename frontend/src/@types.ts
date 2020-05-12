@@ -20,10 +20,12 @@ export const IsOddData = t.type({
 export type IsOddData = t.TypeOf<typeof IsOddData>
 
 
-export const NewTimestampData = t.type({
-  // should be a datetime or something
-  formatted_timestamp: t.string
-})
+// export const NewTimestampData = t.type({
+//   // should be a datetime or something
+//   formatted_timestamp: DateFromISOString
+// })
+
+export const NewTimestampData = t.string
 
 export type NewTimestampData = t.TypeOf<typeof NewTimestampData>
 

@@ -1,12 +1,15 @@
-import {APIResponse} from './@types'
-import { flow } from 'fp-ts/lib/function';
+import {APIResponse, NewTimestampData} from '../@types'
 import { Either } from 'fp-ts/lib/Either'
 import * as t from 'io-ts';
 
 // TODO: refine the any to be the apiresponse generic
 export function validateResponse<c extends t.Mixed>(event: MessageEvent, dataType: c): Either<t.Errors, any>{
-    return flow(
-        JSON.parse,
-        APIResponse(dataType).decode
-    )(event.data)
+    const hack = {
+        response_code: 200,
+        data: event.data
+    }
+    const r =  APIResponse(dataType).decode(hack)
+    console.log({data: event.data, r})
+
+    return r
 }

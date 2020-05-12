@@ -1,7 +1,7 @@
 import { Machine, MachineConfig, MachineOptions, assign, Sender, DoneInvokeEvent, InvokeCreator, send, sendParent, StateNode } from 'xstate'
 import * as t from 'io-ts'
 import { Either, fold, isLeft, isRight, right } from 'fp-ts/lib/Either'
-import { validateResponse } from '../webSocketHandlers'
+import { validateResponse } from '../handlers/webSocketHandlers'
 import {ApiResponses} from '../@types'
 
 
@@ -22,7 +22,6 @@ export type AutomataSchema = {
 		[key in States]: {}
 	}
 }
-
 
 
 // Events
@@ -80,12 +79,14 @@ export type AutomataContext = {
 	webSocketUrl: string,
 	webSocket?: WebSocket,
 	dataType: t.Mixed,
+	isConnected: boolean,
 	// any should be the type of the api response
 	msgE: Either<t.Errors, any>,
 }
 
 // this is just to stop typescript whinging when provided to withContext
 export const initialContext: AutomataContext = {
+	isConnected: false,
 	webSocketUrl: '',
 	showSpinner: false,
 	dataType: t.any,
@@ -109,13 +110,30 @@ export const sendData = (context: AutomataContext, event: SendData) =>
 export const addWebSocket = assign<AutomataContext, NewConnectedWebSocket>({
 	webSocket: (c, event: NewConnectedWebSocket) => event.data.webSocket
 })
-export const msgIsLeft = (c: AutomataContext, e: AutomataEvent) => isLeft(c.msgE)
+export const msgIsLeft = (c: AutomataContext, e: AutomataEvent) => {
+	console.log({m: c.msgE, l: isLeft(c.msgE), r: isRight(c.msgE)})
+	return isLeft(c.msgE)
+}
 export const msgIsRight = (c: AutomataContext, e: AutomataEvent) => isRight(c.msgE)
 
 export const handleWebSocketConnectionError = (context: AutomataContext, event: AutomataEvent) => {
 	console.error(event)
 	alert('Error connecting to websocket')
 }
+
+export const sendNewMessageToParent =  
+	sendParent<AutomataContext, AutomataEvent>((c: AutomataContext)=>({
+		type: 'NEW_MESSAGE',
+		// this should extract the actual message data from the message validation
+		data: fold(
+				e => null, 
+				(m: ApiResponses) => {
+					console.log({m,c})
+
+					return m.data
+				}
+			)(c.msgE)
+	}))
 
 export const connectWebsocket: InvokeCreator<AutomataContext, AutomataEvent, any> =
 	(context: AutomataContext, e) =>
@@ -128,13 +146,16 @@ export const connectWebsocket: InvokeCreator<AutomataContext, AutomataEvent, any
 				webSocket.onopen = e => resolve({ webSocket })
 				webSocket.onmessage = function (this: WebSocket, ev: MessageEvent) {
 					const event = ev
+					console.log({ev})
 					callback({ type: Events.NEW_MESSAGE, event })
 				}
 			})
 
 export const validateNewMessage =
-	(c: AutomataContext, e: NewMessage) => 
-		Object.assign(c, {msgE: validateResponse(e.event, c.dataType)})
+		assign<AutomataContext, NewMessage>({
+			msgE:(c: AutomataContext, e: NewMessage) =>  validateResponse(e.event, c.dataType)
+		})
+	
 
 
 // Config
@@ -171,6 +192,12 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 			}
 		},
 		[States.CONNECTED]: {
+			entry: [
+				assign<AutomataContext>({isConnected: true}),
+				// TODO: change string to Event references and have the parent 
+				// reference that too.
+				sendParent('CONNECTED'),
+			],
 			on: {
 				[Events.DISCONNECT]: {
 					target: States.DISCONNECTED
@@ -194,20 +221,21 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 			}
 		},
 		[States.VALID_MESSAGE]: {
-			entry: sendParent<AutomataContext, AutomataEvent>({
-				type: 'NEW_MESSAGE',
-				// this should extract the actual message data from the message validation
-				data: (c: AutomataContext) => fold(e => null, (m: ApiResponses) => m.data)(c.msgE)
-			})
+			entry: 'sendNewMessageToParent',
+			on:{
+				'': States.CONNECTED
+			}
 		},
 		[States.INVALID_MESSAGE]: {
+			entry: ()=> console.log('error with message'),
 			after:{
-				1000: {
+				500: {
 					target: States.CONNECTED
 				}
 			}
 		},
 		[States.DISCONNECTED]: {
+			entry: assign<AutomataContext>({isConnected: false}),
 			on: {
 				[Events.CONNECT]: {
 					target: States.CONNECTING,
@@ -227,7 +255,8 @@ export const options: Partial<MachineOptions<AutomataContext, any>> = {
 		addWebSocket,
 		handleWebSocketConnectionError,
 		connectWebsocket,
-		validateNewMessage
+		validateNewMessage,
+		sendNewMessageToParent
 	},
 	guards:{
 		msgIsLeft,
