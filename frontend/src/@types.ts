@@ -11,7 +11,6 @@ export const IsOddData = t.type({
   response_time: DateFromISOString,
   number_metadata: t.type({
     number_pronunciation_string: t.string,
-    // this could possibly be a dynamic type using the value above. probably overkill
     number_pronunciation_length: t.number,
     number_pronunciation_parts: t.array(t.string),
   })
@@ -21,10 +20,8 @@ export type IsOddData = t.TypeOf<typeof IsOddData>
 
 
 export const NewTimestampData = t.type({
-  // should be a datetime or something
-  formatted_timestamp: DateFromISOString
+  timestamp: DateFromISOString
 })
-
 
 export type NewTimestampData = t.TypeOf<typeof NewTimestampData>
 

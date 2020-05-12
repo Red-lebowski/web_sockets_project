@@ -64,10 +64,15 @@ class SendTime(WebSocketEndpoint):
             await asyncio.sleep(1)
             current_second = get_current_second()
             data = {
-                'formatted_timestamp': current_second
+                'timestamp': current_second
             }
-            res = NewTimestampResponse(response_code=200, data=data)
-            await websocket.send_text(res.json())
+            try: 
+                res = NewTimestampResponse(response_code=200, data=data)
+                r = await websocket.send_text(res.json())
+            except ValidationError as e:
+                logging.warning('Response broke: ' + str(e.errors()))
+                response = NewTimestampResponse(response_code=500, errors=e.errors())
+        print('break')
 
 
 @app.websocket_route("/is-odd")
@@ -76,6 +81,8 @@ class IsOdd(WebSocketEndpoint):
     task = None
 
     async def on_connect(self, websocket: WebSocket):
+        # this is to demonstrate different websocket connection times on the frontend
+        time.sleep(1)
         await websocket.accept()
     
     @validate_websocket_request
@@ -112,7 +119,6 @@ class IsOdd(WebSocketEndpoint):
 
 def get_current_second():
     return datetime.now().isoformat()
-    # .strftime("%d/%m/ %Y %H:%M:%S")
 
 
 if __name__ == "__main__":

@@ -32,44 +32,47 @@ export type AutomataSchema = {
 
 // Events
 // TODO: make parent machine reference this
-// TODO: prepend all events with WS
+
 export enum Events {
 	CONNECT = 'CONNECT',
 	CONNECTED = 'CONNECTED',
 	DISCONNECT = 'DISCONNECT',
+	DISCONNECTED = 'DISCONNECTED',
 	SEND_DATA = 'SEND_DATA',
 	NEW_MESSAGE = 'NEW_MESSAGE',
 	NEW_MESSAGE_ERROR = 'NEW_MESSAGE_ERROR',
 	NEW_MESSAGE_VALID = 'NEW_MESSAGE_VALID',
 }
-
-export type Connect = {
-	type: Events.CONNECT
+export type WS_Event = {
+	socketUrl: string
 }
-export type Connected = {
-	type: Events.CONNECTED
+export type Connect = WS_Event & {
+	type: Events.CONNECT,
 }
-export type Disconnect = {
-	type: Events.DISCONNECT
+export type Connected = WS_Event & {
+	type: Events.CONNECTED,
 }
-export type SendData = {
-	type: Events.SEND_DATA
-	data: any
+export type Disconnect = WS_Event & {
+	type: Events.DISCONNECT,
 }
-export type NewMessage = {
-	type: Events.NEW_MESSAGE
-	event: MessageEvent
+export type SendData = WS_Event & {
+	type: Events.SEND_DATA,
+	data: any,
 }
-export type NewConnectedWebSocket = DoneInvokeEvent<{
-	webSocket: WebSocket
+export type NewMessage = WS_Event & {
+	type: Events.NEW_MESSAGE,
+	event: MessageEvent,
+}
+export type NewConnectedWebSocket = WS_Event & DoneInvokeEvent<{
+	webSocket: WebSocket,
 }>
-export type NEW_MESSAGE_ERROR = {
+export type NEW_MESSAGE_ERROR = WS_Event & {
 	type: Events.NEW_MESSAGE_ERROR,
-	errors: t.Errors
+	errors: t.Errors,
 }
-export type NEW_MESSAGE_VALID = {
+export type NEW_MESSAGE_VALID = WS_Event & {
 	type: Events.NEW_MESSAGE_VALID,
-	msg: any
+	msg: any,
 }
 
 export type AutomataEvent =
@@ -150,7 +153,11 @@ export const connectWebsocket: InvokeCreator<AutomataContext, AutomataEvent, any
 				webSocket.onopen = e => resolve({ webSocket })
 				webSocket.onmessage = function (this: WebSocket, ev: MessageEvent) {
 					const event = ev
-					callback({ type: Events.NEW_MESSAGE, event })
+					callback({ 
+						type: Events.NEW_MESSAGE, 
+						socketUrl: context.webSocketUrl, 
+						event 
+					})
 				}
 			})
 
@@ -200,7 +207,7 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 				// TODO: change string to Event references and have the parent 
 				// reference that too.
 				sendParent((c: AutomataContext) => ({
-					type: 'CONNECTED',
+					type: Events.CONNECTED,
 					socketUrl: c.webSocketUrl
 				})),
 			],
@@ -245,7 +252,7 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 				assign<AutomataContext>({isConnected: false}),
 				// i might be able to build my own middleware or something to automatically add the identifier
 				sendParent((c: AutomataContext) => ({
-					type:'DISCONNECTED',
+					type: Events.DISCONNECTED,
 					socketUrl: c.webSocketUrl
 				})),
 				(c,e) => c.webSocket?.close()

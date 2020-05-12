@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 
 import { useMachine } from '@xstate/react';
 
-import {machine} from '../machines/currentSecond'
+import {machine, Events} from '../machines/currentSecond'
 import Loader from './Loader/Loader'
 import { IsOddData } from '../@types';
 
@@ -14,7 +14,7 @@ export default function CurrentSecond() {
     event.preventDefault()
     // TODO: replace the state value to the value in event.target
     const number = numberInput
-    updateSocket({type: 'IS_ODD_FORM_SUBMIT', data: {number}})
+    updateSocket({type: Events.IS_ODD_FORM_SUBMIT, data: {number}})
   }
   
   const isConnected = socketState.context.currentSecondIsConnected
@@ -23,23 +23,24 @@ export default function CurrentSecond() {
                       : 'opacity-10 pointer-events-none'
   const inactiveButtonStyle = "opacity-50 cursor-not-allowed"
   const showSpinner = Object.values(socketState.value).includes('CONNECTING')
+  const stateString = Object.values(socketState.value).join(' | ')
 
   return (
     <div className="flex justify-center bg-gray-200 w-full h-screen">
 
-      <div className="flex flex-col w-1/3">
+      <div className="flex flex-col w-2/3">
 
         <div className="flex flex-row w-auto text-center">
-          <span className="flex-1 underline"> {socketState.context.currentSecond} </span>
-          <span className="flex-1">state</span>
+          <span className="flex-1 underline"> {socketState.context.currentSecond.toLocaleString('ko-KR', { timeZone: 'UTC' })} </span>
+          <span className="flex-1">{stateString}</span>
         </div>
 
         <div className="flex flex-no-wrap items-stretch w-1/1 text-center">
           <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${!isConnected && !showSpinner ? '' : inactiveButtonStyle}`} 
-              onClick={e => updateSocket('CONNECT')}
+              onClick={e => updateSocket(Events.CONNECT)}
               >connect</div>
           <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${isConnected && !showSpinner ? '' : inactiveButtonStyle}`}
-              onClick={e => updateSocket('DISCONNECT')}
+              onClick={e => updateSocket(Events.DISCONNECT)}
           >disconnect</div>
           <span className='w-1/5 flex justify-around items-center'>
             {showSpinner ? <Loader/> : ''}

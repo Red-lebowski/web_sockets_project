@@ -15,7 +15,7 @@ class IsOddEnum(str, Enum):
     
 
 class NewTimestampObject(BaseModel):
-    formatted_timestamp: str
+    timestamp: str
 
 
 class IsOddRequest(BaseModel):
