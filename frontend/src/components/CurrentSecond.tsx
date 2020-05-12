@@ -4,6 +4,7 @@ import { useMachine } from '@xstate/react';
 
 import {machine} from '../machines/currentSecond'
 import Loader from './Loader/Loader'
+import { IsOddData } from '../@types';
 
 export default function CurrentSecond() {
   const [numberInput, setNumberInput] = useState<number>(0)
@@ -13,7 +14,7 @@ export default function CurrentSecond() {
     event.preventDefault()
     // TODO: replace the state value to the value in event.target
     const number = numberInput
-    // updateSocket({type: Events.SEND_DATA, data: {number}})
+    updateSocket({type: 'IS_ODD_FORM_SUBMIT', data: {number}})
   }
   
   const isConnected = socketState.context.currentSecondIsConnected
@@ -22,7 +23,7 @@ export default function CurrentSecond() {
                       : 'opacity-10 pointer-events-none'
   const inactiveButtonStyle = "opacity-50 cursor-not-allowed"
   const showSpinner = Object.values(socketState.value).includes('CONNECTING')
-  
+
   return (
     <div className="flex justify-center bg-gray-200 w-full h-screen">
 
@@ -54,7 +55,7 @@ export default function CurrentSecond() {
 
         <div className="is-odd-results">
           {socketState.context.isOddResponses.map( 
-            (resultString: string, id: number) => <li key={id}>{resultString}</li>
+            (result: IsOddData, id: number) => <li key={id}>{result.number}|{result.is_odd}</li>
             )}
         </div>
 

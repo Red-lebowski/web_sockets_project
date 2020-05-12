@@ -30,7 +30,9 @@ export type NEW_MESSAGE = {
 }
 export type IS_ODD_FORM_SUBMIT = {
     type: Events.IS_ODD_FORM_SUBMIT,
-    number: number
+    data:{
+        number: number
+    }
 }
 
 export type AutomataEvents = 
@@ -48,7 +50,7 @@ export type AutomataContext = {
     is_odd_child: any,
     current_second_child: any,
     showSpinner: boolean,
-    isOddResponses: Array<string>,
+    isOddResponses: Array<IsOddData>,
     currentSecond: string,
     currentSecondIsConnected: boolean,
     isOddIsConnected: boolean,
@@ -57,9 +59,13 @@ export type AutomataContext = {
 // actions
 // this event should match the schema defined in the webSocket machine.
 // export const spawnIsOddChild = 
-export const sendFormDataToChild = send<AutomataContext, AutomataEvents>({
-        type: 'SEND_DATA',
-        data: (c: AutomataContext,e: IS_ODD_FORM_SUBMIT) => e.number
+export const sendFormDataToChild = send<AutomataContext, AutomataEvents>(
+    (c: AutomataContext,e: IS_ODD_FORM_SUBMIT) => {
+        console.log({e})
+        return {
+            type: 'SEND_DATA',
+            data: {number: e.data.number}
+        }
     },{
         to: c => c.is_odd_child
     })
@@ -121,7 +127,7 @@ const config: MachineConfig<AutomataContext, any, AutomataEvents> = {
                     on:{
                         [Events.NEW_MESSAGE]:{
                             actions: assign<AutomataContext, AutomataEvents>({
-                                currentSecond: (c,e) => e.data
+                                currentSecond: (c,e) => e.data.formatted_timestamp.toString()
                             }),
                             cond: isNewTimestampEvent,
 
@@ -156,7 +162,7 @@ const config: MachineConfig<AutomataContext, any, AutomataEvents> = {
                         is_odd_child: () => spawn(getWebSocketMachine(`ws://${serverURL}/is-odd`, IsOddData), 'is_odd')     
                     }),
                     on:{
-                        '':{
+                        '': {
                             target: 'DISCONNECTED'
                         }
                     }

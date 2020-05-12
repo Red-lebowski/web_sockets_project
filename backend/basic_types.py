@@ -14,7 +14,7 @@ class IsOddEnum(str, Enum):
     no = 'nope'
     
 
-class NewSecondObject(BaseModel):
+class NewTimestampObject(BaseModel):
     formatted_timestamp: str
 
 
@@ -63,3 +63,5 @@ class WebSocketResponse(GenericModel, Generic[ResponseDataModel]):
 class IsOddResponse(WebSocketResponse[IsOddResult]):
     pass
 
+class NewTimestampResponse(WebSocketResponse[NewTimestampObject]):
+    pass

@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from pydantic import validate_arguments, ValidationError
 
 from custom_type_validators import validate_websocket_request
-from basic_types import IsOddRequest, IsOddResponse, IsOddResult
+from basic_types import IsOddRequest, IsOddResponse, IsOddResult, NewTimestampResponse
 
 app = FastAPI()
 
@@ -63,7 +63,11 @@ class SendTime(WebSocketEndpoint):
         while True:
             await asyncio.sleep(1)
             current_second = get_current_second()
-            await websocket.send_text(current_second)
+            data = {
+                'formatted_timestamp': current_second
+            }
+            res = NewTimestampResponse(response_code=200, data=data)
+            await websocket.send_text(res.json())
 
 
 @app.websocket_route("/is-odd")
@@ -94,13 +98,12 @@ class IsOdd(WebSocketEndpoint):
         }
 
         try:
-            response = IsOddResponse(model=IsOddResult, response_code=response_code, data=data)
+            response = IsOddResponse(response_code=response_code, data=data)
         except ValidationError as e:
             logging.warning('Response broke: ' + str(e.errors()))
-            response = IsOddResponse(model=IsOddResult, response_code=500, errors=e.errors())
+            response = IsOddResponse(response_code=500, errors=e.errors())
         
         await websocket.send_text(response.json())
-
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int):
         await websocket.close()
@@ -108,7 +111,8 @@ class IsOdd(WebSocketEndpoint):
 
 
 def get_current_second():
-    return datetime.now().strftime("%d/%m/ %Y %H:%M:%S")
+    return datetime.now().isoformat()
+    # .strftime("%d/%m/ %Y %H:%M:%S")
 
 
 if __name__ == "__main__":
