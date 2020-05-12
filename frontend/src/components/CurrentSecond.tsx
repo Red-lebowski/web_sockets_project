@@ -17,11 +17,8 @@ export default function CurrentSecond() {
     updateSocket({type: Events.IS_ODD_FORM_SUBMIT, data: {number}})
   }
   
-  const isConnected = socketState.context.currentSecondIsConnected
-  const canSubmitNumberStyle: string = isConnected ? 
-                      ''
-                      : 'opacity-10 pointer-events-none'
-  const inactiveButtonStyle = "opacity-50 cursor-not-allowed"
+  const isConnected = socketState.context.isOddIsConnected
+  const inactiveStyle = 'opacity-50 pointer-events-none'
   const showSpinner = Object.values(socketState.value).includes('CONNECTING')
   const stateString = Object.values(socketState.value).join(' | ')
 
@@ -36,18 +33,18 @@ export default function CurrentSecond() {
         </div>
 
         <div className="flex flex-no-wrap items-stretch w-1/1 text-center">
-          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${!isConnected && !showSpinner ? '' : inactiveButtonStyle}`} 
+          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${!isConnected && !showSpinner ? '' : inactiveStyle}`} 
               onClick={e => updateSocket(Events.CONNECT)}
               >connect</div>
-          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${isConnected && !showSpinner ? '' : inactiveButtonStyle}`}
+          <div className={`w-1/2 bg-blue-500 text-white font-bold py-2 px-4 rounded ${isConnected && !showSpinner ? '' : inactiveStyle}`}
               onClick={e => updateSocket(Events.DISCONNECT)}
-          >disconnect</div>
+              >disconnect</div>
           <span className='w-1/5 flex justify-around items-center'>
             {showSpinner ? <Loader/> : ''}
           </span>
         </div>
 
-        <form className={`flex w-1/1 items-center border-b border-b-2 border-teal-500 py-2 ${canSubmitNumberStyle}`} onSubmit={sendNumber}>
+        <form className={`flex w-1/1 items-center border-b border-b-2 border-teal-500 py-2 ${!isConnected && inactiveStyle}`} onSubmit={sendNumber}>
           <input className='appearance-none bg-transparent border-none w-full text-gray-700 mr-3 py-1 px-2 leading-tight focus:outline-none' 
                 type='number' onChange={e => setNumberInput(Number(e.target.value))} />
           <input className='flex-shrink-0 bg-teal-500 hover:bg-teal-700 border-teal-500 hover:border-teal-700 text-sm border-4 text-white py-1 px-2 rounded' 
