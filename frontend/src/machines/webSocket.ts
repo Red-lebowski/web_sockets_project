@@ -115,10 +115,8 @@ export const hideSpinner = assign<AutomataContext>({
 	showSpinner: (c: AutomataContext, e: any): any => false
 })
 
-export const sendData = (context: AutomataContext, event: SendData) =>{
-	console.log({event})
+export const sendData = (context: AutomataContext, event: SendData) =>
 	context.webSocket?.send(JSON.stringify(event.data))
-}
 
 export const addWebSocket = assign<AutomataContext, NewConnectedWebSocket>({
 	webSocket: (c, event: NewConnectedWebSocket) => event.data.webSocket

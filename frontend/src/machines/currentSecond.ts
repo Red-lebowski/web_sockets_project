@@ -91,19 +91,16 @@ export const spawnIsOddChild = assign<AutomataContext>({
 // this event should match the schema defined in the webSocket machine.
 // issue here is the input event is expected to be the output event type aswell.
 export const sendFormDataToChild = send<AutomataContext, any>(
-    (c: AutomataContext,e: any) => {
-        console.log({e})
-        return {
+    (c: AutomataContext,e: any) => ({
             type: WS_Events.SEND_DATA,
             data: {number: e.data.number}
-        }
-    },{
+        })
+    ,{
         to: c => c.is_odd_child
     })
 
 export const appendIsOddResponse = assign<AutomataContext, any>({
     isOddResponses: (c, e) => {
-        console.log(e)
         const {isOddResponses} = c
         isOddResponses.push(e.data)
         return isOddResponses
