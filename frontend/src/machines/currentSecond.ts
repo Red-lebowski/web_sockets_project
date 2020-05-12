@@ -20,6 +20,7 @@ export enum Events {
     NEW_MESSAGE = 'NEW_MESSAGE' ,
     CONNECT = 'CONNECT',
     DISCONNECT = 'DISCONNECT',
+    DISCONNECTED = 'DISCONNECTED'
 
 }
 
@@ -73,12 +74,7 @@ const config: MachineConfig<AutomataContext, any, AutomataEvents> = {
                         current_second_child: () => spawn(getWebSocketMachine(`ws://${serverURL}/now-updated`, NewTimestampData)),
                     }),
                     on:{
-                        CONNECT: {
-                            actions: send<AutomataContext, AutomataEvents>('CONNECT', {to:(c,e) => c.current_second_child})
-                        },
-                        CONNECTED: {
-                            target: 'CONNECTED'
-                        }
+                        '': 'DISCONNECTED'
                     }
                 },
                 CONNECTING:{
@@ -100,7 +96,26 @@ const config: MachineConfig<AutomataContext, any, AutomataEvents> = {
                                 }
                             })
                         },
-        
+                        [Events.DISCONNECT]:{
+                            actions: send<AutomataContext, AutomataEvents>(
+                                'DISCONNECT',
+                                {to: c => c.current_second_child}
+                            )
+                        },
+                        [Events.DISCONNECTED]:{
+                            target: 'DISCONNECTED',
+                        }
+                    },
+                },
+                DISCONNECTED:{
+                    entry: assign<AutomataContext>({currentSecondIsConnected: false}),
+                    on:{
+                        CONNECT: {
+                            actions: send<AutomataContext, AutomataEvents>('CONNECT', {to: c => c.current_second_child})
+                        },
+                        CONNECTED: {
+                            target: 'CONNECTED'
+                        }
                     }
                 }
             },

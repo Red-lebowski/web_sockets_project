@@ -235,7 +235,10 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 			}
 		},
 		[States.DISCONNECTED]: {
-			entry: assign<AutomataContext>({isConnected: false}),
+			entry: [
+				assign<AutomataContext>({isConnected: false}),
+				sendParent('DISCONNECTED')
+			],
 			on: {
 				[Events.CONNECT]: {
 					target: States.CONNECTING,
