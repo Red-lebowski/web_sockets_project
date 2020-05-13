@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        container_name: frontend
+        command: npm start
+        ports: 
+            - 3000:3000
+        
+        # fix for issue: https://github.com/facebook/create-react-app/issues/8688
+        stdin_open: true
+        
