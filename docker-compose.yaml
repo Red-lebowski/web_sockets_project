@@ -1,7 +1,17 @@
 version: "3"
 
 services:
+    backend:
+        build: 
+            context: ./backend
+            dockerfile: Dockerfile
+        container_name: backend
+        command: pipenv run server
+        ports:
+            - 8000:8000
     frontend:
+        depends_on: 
+            - backend
         build:
             context: ./frontend
             dockerfile: Dockerfile
@@ -9,7 +19,5 @@ services:
         command: npm start
         ports: 
             - 3000:3000
-        
         # fix for issue: https://github.com/facebook/create-react-app/issues/8688
         stdin_open: true
-        

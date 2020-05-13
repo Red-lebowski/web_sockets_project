@@ -18,5 +18,5 @@ num2words = "*"
 python_version = "3.8"
 
 [scripts]
-server = "uvicorn main:app --reload"
+server = "uvicorn main:app --reload --host 0.0.0.0"
 test_server = "python3 test_client.py"
