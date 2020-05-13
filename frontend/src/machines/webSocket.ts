@@ -174,7 +174,7 @@ export const config: MachineConfig<AutomataContext, AutomataSchema, AutomataEven
 	states: {
 		[States.CONNECTING]: {
 			entry: 'showSpinner',
-			on: {
+			on: { 
 				[Events.CONNECTED]: {
 					target: States.CONNECTED
 				}

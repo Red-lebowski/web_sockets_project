@@ -1,6 +1,7 @@
 import {spawn, MachineConfig, assign, send, Interpreter, MachineOptions, Machine} from 'xstate'
 
-import {getWebSocketMachine, 
+import {
+    getWebSocketMachine, 
     Events as WS_Events, 
     AutomataEvent as WS_AutomataEvent,
 } from './webSocket'
