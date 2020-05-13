@@ -3,6 +3,12 @@
 - install frontend depdancies `cd frontend && npm install`
 
 # Run
+## With Docker
+- build: `docker-compose build`
+- run: `docker-compose up`
+- open browser to `http://localhost:3000`
+
+## Without Docker
 - start backend server `cd backend && pipenv run server`
 - start frontend `cd frontend && npm start`
 
