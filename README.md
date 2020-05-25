@@ -1,7 +1,7 @@
 # Setup
 - install backend dependancies `cd backend && pipenv install`
 - install frontend depdancies `cd frontend && npm install`
-
+testing testing 
 # Run
 ## With Docker
 - build: `docker-compose build`
